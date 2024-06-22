@@ -55,3 +55,58 @@ module.exports.getCategories = function() {
         }
     });
 };
+
+function addItem(itemData) {
+    return new Promise((resolve, reject) => {
+        if (itemData.published === undefined) {
+            itemData.published = false;
+        } else {
+            itemData.published = true;
+        }
+
+        itemData.id = items.length + 1;
+        items.push(itemData);
+        resolve(itemData);
+    });
+}
+
+module.exports.addItem = addItem;
+
+function getItemsByCategory(category) {
+    return new Promise((resolve, reject) => {
+        let filteredItems = items.filter(item => item.category == category);
+        if (filteredItems.length > 0) {
+            resolve(filteredItems);
+        } else {
+            reject("no results returned");
+        }
+    });
+}
+
+module.exports.getItemsByCategory = getItemsByCategory;
+
+function getItemsByMinDate(minDateStr) {
+    return new Promise((resolve, reject) => {
+        let filteredItems = items.filter(item => new Date(item.postDate) >= new Date(minDateStr));
+        if (filteredItems.length > 0) {
+            resolve(filteredItems);
+        } else {
+            reject("no results returned");
+        }
+    });
+}
+
+module.exports.getItemsByMinDate = getItemsByMinDate;
+
+function getItemById(id) {
+    return new Promise((resolve, reject) => {
+        let item = items.find(item => item.id == id);
+        if (item) {
+            resolve(item);
+        } else {
+            reject("no result returned");
+        }
+    });
+}
+
+module.exports.getItemById = getItemById;

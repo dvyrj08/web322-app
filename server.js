@@ -1,26 +1,12 @@
-/*********************************************************************************
-
-WEB322 – Assignment 02
-I declare that this assignment is my own work in accordance with Seneca  Academic Policy.  No part *  of this assignment has been copied manually or electronically from any other source (including 3rd party web sites) or distributed to other students.
-
-Name: Divyraj Solanki 
-Student ID: 149093213 
-Date: 21 June 2024
-Vercel Web App URL: https://web322-app-nine.vercel.app/about
-GitHub Repository URL: https://github.com/dvyrj08/web322-app
-
-********************************************************************************/ 
-
 const express = require('express');
-const app = express();
-const path = require('path');
-const storeService = require('./store-service');
-
-// Add these lines for multer, cloudinary, and streamifier
+const exphbs = require('express-handlebars');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
+const path = require('path');
+const storeService = require('./store-service');
 
+const app = express();
 const PORT = process.env.PORT || 8080;
 
 // Cloudinary configuration
@@ -37,9 +23,41 @@ const upload = multer(); // no { storage: storage } since we are not using disk 
 // Middleware to serve static files
 app.use(express.static(__dirname + "/public/"));
 
+// Middleware to set activeRoute and viewingCategory
+app.use(function(req, res, next) {
+    let route = req.path.substring(1);
+    app.locals.activeRoute = "/" + (isNaN(route.split('/')[1]) ? route.replace(/\/(?!.*)/, "") : route.replace(/\/(.*)/, ""));
+    app.locals.viewingCategory = req.query.category;
+    next();
+});
+
+
+
+// Setup express-handlebars
+const hbs = exphbs.create({
+    extname: '.hbs',
+    helpers: {
+        navLink: function(url, options) {
+            return '<li' + ((url == app.locals.activeRoute) ? ' class="active" ' : '') + '><a href="' + url + '">' + options.fn(this) + '</a></li>';
+        },
+        equal: function(lvalue, rvalue, options) {
+            if (arguments.length < 3)
+                throw new Error("Handlebars Helper equal needs 2 parameters");
+            if (lvalue != rvalue) {
+                return options.inverse(this);
+            } else {
+                return options.fn(this);
+            }
+        }
+    }
+});
+app.engine('.hbs', hbs.engine);
+app.set('view engine', '.hbs');
+
+
 // Route for "/about"
 app.get('/about', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/about.html'));
+    res.render('about');
 });
 
 // Redirect "/" to "/about"
@@ -48,39 +66,51 @@ app.get('/', (req, res) => {
 });
 
 // Route to get all published items
-app.get('/shop', (req, res) => {
-    storeService.getPublishedItems()
-        .then(data => res.json(data))
-        .catch(err => res.status(500).json({ message: err }));
+app.get("/shop", async (req, res) => {
+    let viewData = {};
+
+    try {
+        let items = [];
+        if (req.query.category) {
+            items = await itemData.getPublishedItemsByCategory(req.query.category);
+        } else {
+            items = await itemData.getPublishedItems();
+        }
+        items.sort((a, b) => new Date(b.postDate) - new Date(a.postDate));
+        let item = items[0];
+        viewData.items = items;
+        viewData.item = item;
+    } catch (err) {
+        viewData.message = "no results";
+    }
+
+    try {
+        let categories = await itemData.getCategories();
+        viewData.categories = categories;
+    } catch (err) {
+        viewData.categoriesMessage = "no results";
+    }
+
+    res.render("shop", { data: viewData });
 });
+
 
 // Route to get all items
 app.get('/items', (req, res) => {
     if (req.query.category) {
         storeService.getItemsByCategory(req.query.category)
-            .then(data => res.json(data))
-            .catch(err => res.status(500).json({ message: err }));
-    } else if (req.query.minDate) {
-        storeService.getItemsByMinDate(req.query.minDate)
-            .then(data => res.json(data))
-            .catch(err => res.status(500).json({ message: err }));
+            .then(data => res.render('items', { items: data }))
+            .catch(err => res.render('items', { message: "no results" }));
     } else {
         storeService.getAllItems()
-            .then(data => res.json(data))
-            .catch(err => res.status(500).json({ message: err }));
+            .then(data => res.render('items', { items: data }))
+            .catch(err => res.render('items', { message: "no results" }));
     }
 });
 
-// Route to get all categories
-app.get('/categories', (req, res) => {
-    storeService.getCategories()
-        .then(data => res.json(data))
-        .catch(err => res.status(500).json({ message: err }));
-});
-
-// Route to serve the addItem.html file
+// Route to get the "Add Post" page
 app.get('/items/add', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/addItem.html'));
+    res.render('addItem');
 });
 
 // Route to handle adding items
@@ -133,6 +163,17 @@ app.get('/item/:id', (req, res) => {
         .then(data => res.json(data))
         .catch(err => res.status(500).json({ message: err }));
 });
+
+// Route to get categories
+app.get('/categories', (req, res) => {
+    storeService.getCategories()
+        .then(data => {
+            console.log(data); // Log the data to verify its structure
+            res.render('categories', { categories: data });
+        })
+        .catch(err => res.render('categories', { message: "no results" }));
+});
+
 
 // Handle 404 errors
 app.use((req, res) => {

@@ -2,7 +2,15 @@ const fs = require('fs');
 const path = require('path');
 
 let items = [];
-let categories = [];
+// let categories = [
+//     { id: 1, name: 'Home, Garden' },
+//     { id: 2, name: 'Electronics, Computers, Video Games' },
+//     { id: 3, name: 'Clothing' },
+//     { id: 4, name: 'Sports & Outdoors' },
+//     { id: 5, name: 'Pets' }
+// ];
+
+
 
 module.exports.initialize = function() {
     return new Promise((resolve, reject) => {
@@ -46,12 +54,20 @@ module.exports.getPublishedItems = function() {
     });
 };
 
-module.exports.getCategories = function() {
+let categories = [
+    { id: 1, name: 'Home, Garden' },
+    { id: 2, name: 'Electronics, Computers, Video Games' },
+    { id: 3, name: 'Clothing' },
+    { id: 4, name: 'Sports & Outdoors' },
+    { id: 5, name: 'Pets' }
+];
+
+module.exports.getCategories = () => {
     return new Promise((resolve, reject) => {
-        if (categories.length === 0) {
-            reject("No results returned");
-        } else {
+        if (categories.length > 0) {
             resolve(categories);
+        } else {    
+            reject("No categories found");
         }
     });
 };
@@ -110,3 +126,14 @@ function getItemById(id) {
 }
 
 module.exports.getItemById = getItemById;
+
+module.exports.getPublishedItemsByCategory = (category) => {
+    return new Promise((resolve, reject) => {
+        const filteredItems = items.filter(item => item.published === true && item.category == category);
+        if (filteredItems.length > 0) {
+            resolve(filteredItems);
+        } else {
+            reject("No items found for this category");
+        }
+    });
+};

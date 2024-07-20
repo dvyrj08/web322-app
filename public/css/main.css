@@ -80,3 +80,10 @@ p {
     color: #ccc;
     font-weight: 300;
 }
+
+
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #e9ecef;
+}

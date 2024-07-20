@@ -21,7 +21,7 @@ const path = require('path');
 const storeService = require('./store-service');
 
 const app = express();
-const PORT = process.env.web322-app-nine.vercel.app/about;
+const PORT = process.env.PORT || 8080;
 
 // Cloudinary configuration
 cloudinary.config({

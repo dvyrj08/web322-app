@@ -71,7 +71,7 @@ app.set('view engine', '.hbs');
 
 // Route for "/about"
 app.get('/about', (req, res) => {
-    res.render('/about');
+    res.render('about');
 });
 
 // Redirect "/" to "/about"
